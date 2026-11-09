@@ -23,7 +23,7 @@ from .config import env
 _OPENAI_COMPATIBLE = {
     "openai":     (None,                                              "OPENAI_API_KEY",     "gpt-4o-mini",                        True),
     "ollama":     ("http://localhost:11434/v1",                       None,                 "llama3.1",                          False),
-    "groq":       ("https://api.groq.com/openai/v1",                  "GROQ_API_KEY",       "llama-3.3-70b-versatile",           True),
+    "groq":       ("https://api.groq.com/openai/v1",                  "GROQ_API_KEY",       "openai/gpt-oss-120b",               True),
     "openrouter": ("https://openrouter.ai/api/v1",                    "OPENROUTER_API_KEY", "meta-llama/llama-3.1-8b-instruct:free", True),
     "gemini":     ("https://generativelanguage.googleapis.com/v1beta/openai/", "GEMINI_API_KEY", "gemini-flash-latest",         True),
 }
@@ -83,12 +83,17 @@ def _openai_compatible(provider: str, prompt: str, llm: dict, max_tokens: int) -
     call_max_tokens = max(max_tokens, 4096) if provider == "gemini" else max_tokens
 
     def _call():
-        resp = client.chat.completions.create(
-            model=llm.get("model", fallback_model),
-            max_tokens=call_max_tokens,
-            temperature=llm.get("temperature", 0.9),
-            messages=[{"role": "user", "content": prompt}],
-        )
+        kwargs = {
+            "model": llm.get("model", fallback_model),
+            "max_tokens": call_max_tokens,
+            "temperature": llm.get("temperature", 0.9),
+            "messages": [{"role": "user", "content": prompt}],
+        }
+        # Force JSON output for providers that support the OpenAI response_format standard
+        if provider in ("openai", "groq", "openrouter"):
+            kwargs["response_format"] = {"type": "json_object"}
+
+        resp = client.chat.completions.create(**kwargs)
         return resp.choices[0].message.content or ""
 
     return _with_retry(_call, llm)
