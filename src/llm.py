@@ -83,16 +83,16 @@ def _openai_compatible(provider: str, prompt: str, llm: dict, max_tokens: int) -
     call_max_tokens = max(max_tokens, 4096) if provider == "gemini" else max_tokens
 
     def _call():
-    # Añadimos una orden estricta al prompt para forzar el JSON
-    strict_prompt = prompt + "\n\nCRITICAL: You must respond ONLY with a valid JSON object. Do not include any conversational text, no markdown formatting (like ```json), and no explanations."
-    
-    resp = client.chat.completions.create(
-        model=llm.get("model", fallback_model),
-        max_tokens=call_max_tokens,
-        temperature=llm.get("temperature", 0.9),
-        messages=[{"role": "user", "content": strict_prompt}],
-    )
-    return resp.choices[0].message.content or ""
+        # Añadimos una orden estricta al prompt para forzar el JSON
+        strict_prompt = prompt + "\n\nCRITICAL: You must respond ONLY with a valid JSON object. Do not include any conversational text, no markdown formatting (like ```json), and no explanations."
+        
+        resp = client.chat.completions.create(
+            model=llm.get("model", fallback_model),
+            max_tokens=call_max_tokens,
+            temperature=llm.get("temperature", 0.9),
+            messages=[{"role": "user", "content": strict_prompt}],
+        )
+        return resp.choices[0].message.content or ""
 
     return _with_retry(_call, llm)
 
