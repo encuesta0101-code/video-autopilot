@@ -1,4 +1,4 @@
-"""Stage 4 — gather one vertical visual per beat. Pexels stock (free) or AI images."""
+"""Stage 4 — gather one vertical visual per beat. Pexels/Pixabay stock (free) or AI images."""
 from __future__ import annotations
 
 import math
@@ -30,13 +30,15 @@ def gather_visuals(cfg: dict, script: dict, out_dir: Path, duration: float) -> l
         queries = [style] * needed
 
     provider = cfg["visuals"]["provider"]
-    used_ids: set = set()  # avoid downloading the same Pexels clip twice in a row
+    used_ids: set = set()  # avoid downloading the same clip twice in a row
     paths: list[Path] = []
     for i, q in enumerate(queries):
         dest = clips_dir / f"{i:02d}"
         try:
             if provider == "pexels":
                 paths.append(_pexels_video(q, dest, cfg, used_ids))
+            elif provider == "pixabay":
+                paths.append(_pixabay_video(q, dest, cfg, used_ids))
             elif provider in ("fal", "replicate"):
                 paths.append(_ai_image(q, dest, cfg, provider))
             else:
@@ -81,6 +83,45 @@ def _pexels_video(query: str, dest: Path, cfg: dict, used_ids: Optional[set] = N
         key=lambda f: (abs((f.get("height") or 0) - 1920), -(f.get("width") or 0)),
     )
     url = files[0]["link"]
+    out = dest.with_suffix(".mp4")
+    out.write_bytes(requests.get(url, timeout=120).content)
+    return out
+
+
+def _pixabay_video(query: str, dest: Path, cfg: dict, used_ids: Optional[set] = None) -> Path:
+    key = env("PIXABAY_API_KEY")
+    if not key:
+        raise SystemExit("PIXABAY_API_KEY missing in .env")
+    used_ids = used_ids if used_ids is not None else set()
+    
+    r = requests.get(
+        "https://pixabay.com/api/videos/",
+        params={
+            "key": key,
+            "q": query,
+            "orientation": "vertical",
+            "video_type": "film",
+            "per_page": 20,
+            "safesearch": "true"
+        },
+        timeout=30,
+    )
+    r.raise_for_status()
+    hits = r.json().get("hits", [])
+    
+    if not hits:
+        raise RuntimeError("no Pixabay results")
+
+    fresh = [v for v in hits if str(v.get("id")) not in used_ids] or hits
+    video = fresh[0]
+    used_ids.add(str(video.get("id")))
+
+    videos = video.get("videos", {})
+    url = videos.get("medium", {}).get("url") or videos.get("small", {}).get("url")
+    
+    if not url:
+        raise RuntimeError("no usable video URL in Pixabay result")
+
     out = dest.with_suffix(".mp4")
     out.write_bytes(requests.get(url, timeout=120).content)
     return out
