@@ -15,7 +15,7 @@ channels:
     music_mood: "epic, building, inspirational"
     platforms: [youtube, tiktok, instagram, facebook]
     series: false
-    posts_per_day: 2
+    posts_per_day: 3
 
   money:
     name: "Money Mechanics"
@@ -28,7 +28,7 @@ channels:
     music_mood: "upbeat, modern, light"
     platforms: [youtube, tiktok, instagram, facebook]
     inject_disclaimer: finance     # pulls settings.compliance.disclaimers.finance
-    posts_per_day: 1
+    posts_per_day: 3
 
   facts:
     name: "Mind Blown Facts"
@@ -40,7 +40,7 @@ channels:
     visual_style: "abstract, brain, space, nature macro, satisfying visuals"
     music_mood: "curious, playful, light electronic"
     platforms: [youtube, tiktok, instagram, facebook]
-    posts_per_day: 1
+    posts_per_day: 
 
   # ── Template: copy, rename the key, change the fields ──
   # newchannel:
